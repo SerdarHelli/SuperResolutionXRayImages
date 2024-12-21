@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 import torch
-
+import sys
+import os
 # Initialize router
 router = APIRouter()
 
@@ -12,16 +13,22 @@ async def health_check():
     Returns:
         dict: Status message indicating the API and CUDA availability.
     """
+    def bash(command):
+        return os.popen(command).read()
+
     # Check CUDA status
-    cuda_available = torch.cuda.is_available()
-    cuda_device = torch.cuda.get_device_name(0) if cuda_available else "No CUDA device found"
 
     # Construct response
     return {
         "status": "Healthy",
         "message": "API is running successfully.",
         "cuda": {
-            "available": cuda_available,
-            "device": cuda_device
+            "sys.version": sys.version,
+            "torch.__version__": torch.__version__,
+            "torch.cuda.is_available()": torch.cuda.is_available(),
+            "torch.version.cuda": torch.version.cuda,
+            "torch.backends.cudnn.version()": torch.backends.cudnn.version(),
+            "torch.backends.cudnn.enabled": torch.backends.cudnn.enabled,
+            "nvidia-smi": bash('nvidia-smi')
         }
     }
