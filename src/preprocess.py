@@ -1,110 +1,141 @@
-import torch
-from PIL import Image
+import pydicom
 import numpy as np
-from .preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
-from .network.model import RealESRGAN
+from pydicom.pixels import apply_voi_lut
+from skimage import exposure
+from PIL import Image
+import cv2
 
-class Inference:
-    def __init__(self, model_weights, device=None, scale=4):
-        """
-        Initialize the inference pipeline.
+def read_xray(path, voi_lut=True, fix_monochrome=True):
+    """
+    Read and preprocess a DICOM X-ray image.
 
-        Args:
-            model_weights: Path to the model weights file.
-            device: Computation device ('cuda' or 'cpu').
-            scale: Upscaling factor for the model.
-        """
-        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Using device: {self.device}")
+    Parameters:
+    - path: Path to the DICOM file.
+    - voi_lut: Apply VOI LUT if available.
+    - fix_monochrome: Fix inverted monochrome images.
 
-        # Initialize and load the model
-        self.model = RealESRGAN(self.device, scale=scale)
-        self.load_weights(model_weights)
+    Returns:
+    - NumPy array: Preprocessed X-ray image.
+    """
+    dicom = pydicom.dcmread(path)
 
-    def load_weights(self, model_weights):
-        """
-        Load the model weights.
+    # Apply VOI LUT if available
+    if voi_lut:
+        data = apply_voi_lut(dicom.pixel_array, dicom)
+    else:
+        data = dicom.pixel_array
 
-        Args:
-            model_weights: Path to the model weights file.
-        """
-        try:
-            self.model.load_weights(model_weights)
-            print(f"Model weights loaded from {model_weights}")
-        except FileNotFoundError:
-            print(f"Error: Weight file '{model_weights}' not found.")
-        except Exception as e:
-            print(f"Error loading weights: {e}")
+    # Fix inverted monochrome images
+    if fix_monochrome and dicom.PhotometricInterpretation == "MONOCHROME1":
+        data = np.amax(data) - data
 
-    def preprocess(self, image_path, is_dicom=False):
-        """
-        Preprocess the input image.
+    # Normalize data to start from 0
+    data = data - np.min(data)
 
-        Args:
-            image_path: Path to the input image file.
-            is_dicom: Boolean indicating if the input is a DICOM file.
+    return data
 
-        Returns:
-            PIL Image: Preprocessed image.
-        """
-        try:
-            if is_dicom:
-                img = read_xray(image_path)
-                img = enhance_exposure(img)
-                img = unsharp_masking(img, 7, 0.5)
-                return img
-            else:
-                img = Image.open(image_path).convert('RGB')
-                img = enhance_exposure(np.array(img))
-                img = unsharp_masking(img, 7, 0.5)
-                return img
-        except Exception as e:
-            print(f"Error loading or preprocessing image {image_path}: {e}")
-            return None
+def enhance_exposure(img):
+    """
+    Enhance image exposure using histogram equalization.
 
-    def postprocess(self, image_array):
-        """
-        Postprocess the output from the model.
+    Parameters:
+    - img: Input image as a NumPy array.
 
-        Args:
-            image_array: Numpy array output from the model.
+    Returns:
+    - PIL.Image: Exposure-enhanced image.
+    """
+    img = exposure.equalize_hist(img)
+    img = exposure.equalize_adapthist(img / np.max(img))
+    img = (img * 255).astype(np.uint8)
+    return Image.fromarray(img)
 
-        Returns:
-            PIL Image: Postprocessed image.
-        """
-        return Image.fromarray(np.uint8(image_array))
+def unsharp_masking(image, kernel_size=5, strength=0.25):
+    """
+    Apply unsharp masking to enhance image sharpness.
 
-    def infer(self, input_image):
-        """
-        Perform inference on a single image.
+    Parameters:
+    - image: Input image as a NumPy array or PIL.Image.
+    - kernel_size: Size of the Gaussian blur kernel.
+    - strength: Strength of the high-pass filter.
 
-        Args:
-            input_image: PIL Image to be processed.
+    Returns:
+    - PIL.Image: Sharpened image.
+    """
+    image = np.array(image)
 
-        Returns:
-            PIL Image: Super-resolved image.
-        """
-        input_array = np.array(input_image)
-        sr_array = self.model.predict(input_array)
-        return self.postprocess(sr_array)
+    # Convert to grayscale if needed
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image
 
-    def run(self, input_path, is_dicom=False, apply_clahe_postprocess=False):
-        """
-        Process a single image and save the output.
+    # Apply Gaussian blur and calculate high-pass filter
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    high_pass = cv2.subtract(gray, blurred)
 
-        Args:
-            input_path: Path to the input image file.
-            output_path: Path to save the processed image.
-            is_dicom: Boolean indicating if the input is a DICOM file.
-            apply_clahe_postprocess: Boolean indicating if CLAHE should be applied post-processing.
-        """
-        img = self.preprocess(input_path, is_dicom=is_dicom)
-        if img is None:
-            return
+    # Combine high-pass with original image
+    sharpened = cv2.addWeighted(gray, 1, high_pass, strength, 0)
 
-        sr_image = self.infer(img)
+    return Image.fromarray(sharpened)
 
-        if apply_clahe_postprocess:
-            sr_image = apply_clahe(sr_image)
+def increase_contrast(img, factor=1.5):
+    """
+    Increase the contrast of an image.
 
-        return sr_image
+    Parameters:
+    - img: Input image as a PIL.Image.
+    - factor: Contrast adjustment factor.
+
+    Returns:
+    - PIL.Image: Contrast-enhanced image.
+    """
+    img_array = np.array(img).astype(float)
+    mean_intensity = np.mean(img_array)
+
+    # Adjust contrast
+    img_array = mean_intensity + factor * (img_array - mean_intensity)
+    img_array = np.clip(img_array, 0, 255)
+
+    return Image.fromarray(img_array.astype(np.uint8))
+
+def apply_clahe(image, clipLimit=2.0, tileGridSize=(8, 8)):
+    """
+    Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to an image.
+
+    Parameters:
+    - image: Input image as a NumPy array or PIL.Image.
+    - clipLimit: Threshold for contrast limiting.
+    - tileGridSize: Size of the grid for histogram equalization.
+
+    Returns:
+    - Processed image in the same format as the input (PIL.Image or NumPy array).
+    """
+    input_is_pil = isinstance(image, Image.Image)
+
+    if input_is_pil:
+        # Convert PIL image to NumPy array
+        image_np = np.array(image)
+        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+    else:
+        image_np = image.copy()
+
+    # Apply CLAHE based on image type
+    if len(image_np.shape) == 2:
+        # Grayscale image
+        clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+        processed = clahe.apply(image_np)
+    else:
+        # Color image: Apply CLAHE on the L channel in LAB space
+        lab = cv2.cvtColor(image_np, cv2.COLOR_BGR2LAB)
+        L, A, B = cv2.split(lab)
+
+        clahe = cv2.createCLAHE(clipLimit=clipLimit, tileGridSize=tileGridSize)
+        L_clahe = clahe.apply(L)
+        lab_clahe = cv2.merge((L_clahe, A, B))
+        processed = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
+
+    if input_is_pil:
+        processed_rgb = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
+        return Image.fromarray(processed_rgb)
+    else:
+        return processed

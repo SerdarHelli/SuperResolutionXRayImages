@@ -1,0 +1,4 @@
+model:
+  weights: "weights/model.pth"  # Path to the model weights
+  scale: 4                      # Scaling factor
+  device: "cuda"                # Device (e.g., "cuda" or "cpu")

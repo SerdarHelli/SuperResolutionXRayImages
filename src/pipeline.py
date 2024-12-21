@@ -4,22 +4,22 @@ import numpy as np
 from .preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
 from .network.model import RealESRGAN
 
-class Inference:
-    def __init__(self, model_weights, device=None, scale=4):
+class InferencePipeline:
+    def __init__(self, config):
         """
-        Initialize the inference pipeline.
+        Initialize the inference pipeline using configuration.
 
         Args:
-            model_weights: Path to the model weights file.
-            device: Computation device ('cuda' or 'cpu').
-            scale: Upscaling factor for the model.
+            config: Configuration dictionary.
         """
-        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        print(f"Using device: {self.device}")
+        self.device = config["model"].get("device", "cuda" if torch.cuda.is_available() else "cpu")
+        self.scale = config["model"].get("scale", 4)
+        self.weights_path = config["model"]["weights"]
 
+        print(f"Using device: {self.device}")
         # Initialize and load the model
-        self.model = RealESRGAN(self.device, scale=scale)
-        self.load_weights(model_weights)
+        self.model = RealESRGAN(self.device, scale=self.scale)
+        self.load_weights(self.model_weights)
 
     def load_weights(self, model_weights):
         """
