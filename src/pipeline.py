@@ -1,9 +1,7 @@
 import torch
 from PIL import Image
 import numpy as np
-import pydicom
 from pathlib import Path
-import io
 from .preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
 from .network.model import RealESRGAN
 from src.app.exceptions import InputError, ModelLoadError, PreprocessingError, InferenceError,PostprocessingError
@@ -16,10 +14,11 @@ class InferencePipeline:
         Args:
             config: Configuration dictionary.
         """
+        self.config = config
         self.device = config["model"].get("device", "cuda" if torch.cuda.is_available() else "cpu")
         self.scale = config["model"].get("scale", 4)
         self.weights_path = config["model"]["weights"]
-
+        
         print(f"Using device: {self.device}")
         # Initialize and load the model
         try:
@@ -42,7 +41,7 @@ class InferencePipeline:
         except Exception as e:
             raise ModelLoadError(f"Error loading weights: {str(e)}")
 
-    def preprocess(self, image_path, is_dicom=False):
+    def preprocess(self, image_path_or_bytes, is_dicom=False):
         """
         Preprocess the input image.
 
@@ -55,15 +54,17 @@ class InferencePipeline:
         """
         try:
             if is_dicom:
-                img = read_xray(image_path)
-                img = enhance_exposure(img)
-                img = unsharp_masking(img, 7, 0.5)
-                return img
+                img = read_xray(image_path_or_bytes)
             else:
-                img = Image.open(image_path).convert('RGB')
-                img = enhance_exposure(np.array(img))
-                img = unsharp_masking(img, 7, 0.5)
-                return img
+                img = Image.open(image_path_or_bytes).convert('RGB')
+
+            img = enhance_exposure(np.array(img))
+            img = unsharp_masking(
+                img,
+                self.config["preprocessing"]["unsharping_mask"].get("kernel_size", 7),
+                self.config["preprocessing"]["unsharping_mask"].get("strength", 0.5)
+            )
+            return img
         except Exception as e:
             raise PreprocessingError(f"Error during postprocessing: {str(e)}")
 
@@ -78,11 +79,15 @@ class InferencePipeline:
             PIL Image: Postprocessed image.
         """
         try:
-            return apply_clahe(image_array,clipLimit=2.0, tileGridSize=(16,16))
+            return apply_clahe(
+                image_array,
+                self.config["postprocessing"]["clahe"].get("clipLimit", 2.0),
+                tuple(self.config["postprocessing"]["clahe"].get("tileGridSize", [16, 16]))
+            )
         except Exception as e:
-            raise PostprocessingError(f"Error during inference: {str(e)}")
+            raise PostprocessingError(f"Error during postprocessing: {str(e)}")
 
-    def is_dicom(self,file_path_or_bytes):
+    def is_dicom(self, file_path_or_bytes):
         """
         Check if the input file is a DICOM file.
 
@@ -93,28 +98,18 @@ class InferencePipeline:
             bool: True if the file is a DICOM file, False otherwise.
         """
         try:
-            # If input is a file path
             if isinstance(file_path_or_bytes, str):
-                # Check file extension
                 file_extension = Path(file_path_or_bytes).suffix.lower()
                 if file_extension in ['.dcm', '.dicom']:
                     return True
-                
-                # Check DICOM header
-                with open(file_path_or_bytes, 'rb') as file:
-                    header = file.read(132)  # DICOM files have a 128-byte preamble followed by "DICM"
-                    is_dicom_header = header[-4:] == b'DICM'
-                    if is_dicom_header:
-                        pydicom.dcmread(file_path_or_bytes)  # Ensure it's a valid DICOM
-                    return is_dicom_header
 
-            # If input is byte content
+                with open(file_path_or_bytes, 'rb') as file:
+                    header = file.read(132)
+                    return header[-4:] == b'DICM'
+
             if isinstance(file_path_or_bytes, bytes):
                 header = file_path_or_bytes[:132]
-                is_dicom_header = header[-4:] == b'DICM'
-                if is_dicom_header:
-                    pydicom.dcmread(io.BytesIO(file_path_or_bytes))  # Ensure it's a valid DICOM
-                return is_dicom_header
+                return header[-4:] == b'DICM'
 
         except Exception:
             return False

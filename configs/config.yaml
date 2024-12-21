@@ -2,3 +2,15 @@ model:
   weights: "weights/model.pth"  # Path to the model weights
   scale: 4                      # Scaling factor
   device: "cuda"                # Device (e.g., "cuda" or "cpu")
+
+preprocessing:
+  unsharping_mask:
+      kernel_size : 7
+      strength: 0.5
+
+postprocessing:
+  clahe:
+    clipLimit: 2
+    tileGridSize: 
+      - 16
+      - 16

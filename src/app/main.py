@@ -36,13 +36,13 @@ async def preprocessing_error_handler(request: Request, exc: PreprocessingError)
         content={"error": "PreprocessingError", "message": exc.message},
     )
 
-
 @app.exception_handler(PostprocessingError)
 async def postprocessing_error_handler(request: Request, exc: PostprocessingError):
     return JSONResponse(
         status_code=400,
         content={"error": "PostprocessingError", "message": exc.message},
     )
+
 @app.exception_handler(InferenceError)
 async def inference_error_handler(request: Request, exc: InferenceError):
     return JSONResponse(

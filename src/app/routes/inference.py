@@ -1,5 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from PIL import Image
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import APIRouter, UploadFile, File
 from io import BytesIO
 from ..config import load_config
 from ...pipeline import InferencePipeline
@@ -21,25 +21,28 @@ async def process_image(
 
     Args:
         file: Image file to process (PNG, JPEG, or DICOM).
-        is_dicom: Boolean indicating if the input is a DICOM file.
         apply_clahe_postprocess: Boolean indicating if CLAHE should be applied post-processing.
 
     Returns:
-        JSONResponse: Processed image or error message.
+        StreamingResponse: Processed image or error message.
     """
     try:
-        # Read the uploaded file
-        contents = await file.read()
-
+        # Read the uploaded file into memory
+        file_bytes = await file.read()
 
         # Perform super-resolution
-        sr_image = inference_pipeline.run(BytesIO(contents),apply_clahe_postprocess = apply_clahe_postprocess)
+        sr_image = inference_pipeline.run(BytesIO(file_bytes), apply_clahe_postprocess=apply_clahe_postprocess)
 
-        # Save or return result
-        output_path = f"output_{file.filename}"
-        sr_image.save(output_path)
+        # Save the result to a BytesIO stream
+        output_stream = BytesIO()
+        sr_image.save(output_stream, format="PNG")
+        output_stream.seek(0)
 
-        return {"message": "Super-resolution completed successfully.", "output_path": output_path}
+        # Return the processed image as a streaming response
+        return StreamingResponse(output_stream, media_type="image/png")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred during prediction: {str(e)}")
+        return JSONResponse(
+            content={"error": f"Error during prediction: {str(e)}"},
+            status_code=500
+        )
