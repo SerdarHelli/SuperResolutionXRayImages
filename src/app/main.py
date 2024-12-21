@@ -5,12 +5,6 @@ from src.app.routes import inference, health
 from src.app.exceptions import ModelLoadError, PreprocessingError, InferenceError,InputError, PostprocessingError
 
 
-
-
-
-
-
-
 app = FastAPI(title="Super Resolution Dental X-ray API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
