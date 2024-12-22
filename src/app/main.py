@@ -1,4 +1,4 @@
-from fastapi import FastAPI,Request
+from fastapi import FastAPI,Request,status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from src.app.routes import inference, health
@@ -20,28 +20,28 @@ def read_root():
 @app.exception_handler(ModelLoadError)
 async def model_load_error_handler(request: Request, exc: ModelLoadError):
     return JSONResponse(
-        status_code=500,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"error": "ModelLoadError", "message": exc.message},
     )
 
 @app.exception_handler(PreprocessingError)
 async def preprocessing_error_handler(request: Request, exc: PreprocessingError):
     return JSONResponse(
-        status_code=400,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"error": "PreprocessingError", "message": exc.message},
     )
 
 @app.exception_handler(PostprocessingError)
 async def postprocessing_error_handler(request: Request, exc: PostprocessingError):
     return JSONResponse(
-        status_code=400,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"error": "PostprocessingError", "message": exc.message},
     )
 
 @app.exception_handler(InferenceError)
 async def inference_error_handler(request: Request, exc: InferenceError):
     return JSONResponse(
-        status_code=500,
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"error": "InferenceError", "message": exc.message},
     )
 
@@ -49,6 +49,6 @@ async def inference_error_handler(request: Request, exc: InferenceError):
 @app.exception_handler(InputError)
 async def input_load_error_handler(request: Request, exc: InputError):
     return JSONResponse(
-        status_code=500,
+        status_code=status.HTTP_400_BAD_REQUEST,
         content={"error": "InputError", "message": exc.message},
     )

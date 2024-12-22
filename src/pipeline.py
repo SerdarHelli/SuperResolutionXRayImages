@@ -113,7 +113,35 @@ class InferencePipeline:
 
         except Exception:
             return False
+        
+    def validate_input(self, input_data):
+        """
+        Validate the input data to ensure it is suitable for processing.
 
+        Args:
+            input_data: Path to the input file or bytes content.
+
+        Returns:
+            bool: True if the input is valid, raises InputError otherwise.
+        """
+        if isinstance(input_data, str):
+            # Check if the file exists
+            if not Path(input_data).exists():
+                raise InputError(f"Input file '{input_data}' does not exist.")
+
+            # Check if the file type is supported
+            file_extension = Path(input_data).suffix.lower()
+            if file_extension not in ['.png', '.jpeg', '.jpg', '.dcm', '.dicom']:
+                raise InputError(f"Unsupported file type '{file_extension}'. Supported types are PNG, JPEG, and DICOM.")
+        elif isinstance(input_data, bytes):
+            # Ensure the byte data is not empty
+            if len(input_data) == 0:
+                raise InputError("Input byte data is empty.")
+        else:
+            raise InputError("Unsupported input type. Must be a file path or byte content.")
+
+        return True
+    
     def infer(self, input_image):
         """
         Perform inference on a single image.
@@ -142,6 +170,8 @@ class InferencePipeline:
             is_dicom: Boolean indicating if the input is a DICOM file.
             apply_clahe_postprocess: Boolean indicating if CLAHE should be applied post-processing.
         """
+        # Validate the input
+        self.validate_input(input_path)
 
         is_dicom =self.is_dicom(input_path)
 
