@@ -24,6 +24,27 @@ This project provides a FastAPI-based application for super-resolving medical DI
 - `weights/`: Pre-trained model weights.
 - `tests/`: Test cases for pipeline and API functionality.
 - `Dockerfile`: Docker configuration for containerized deployment.
+- 
+## Model Description
+
+The super-resolution functionality is powered by the [RealESRGAN](https://arxiv.org/abs/2107.10833) model, fine-tuned specifically for enhancing dental X-ray images. Key steps in the model preparation include:
+
+1. **Preprocessing Dataset**:
+   - Downloaded datasets dental X-ray images.
+   - Organized data into training and validation sets with appropriate folder structures.
+   - Applied multiscale patch generation and meta-information extraction to prepare the data for training.
+
+2. **Model Fine-Tuning**:
+   - Used the RealESRGAN training pipeline for fine-tuning on the dental dataset.
+   - Leveraged base pre-trained weights (`RealESRGAN_x4plus.pth`) as the starting point.
+   - Applied advanced cropping strategies and resolution-specific adjustments for optimal results.
+
+3. **Training Configuration**:
+   - Fine-tuned using a custom parametres.
+   - Utilized NVIDIA GPUs with CUDA acceleration for efficient training.
+   - Periodically validated on unseen data to monitor improvements.
+
+The resulting model significantly improves the clarity and resolution of dental X-rays while preserving diagnostic details.
 
 ## Configuration
 
