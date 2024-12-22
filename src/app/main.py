@@ -15,6 +15,7 @@ app.include_router(health.router, prefix="/health", tags=["Health"])
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Super Resolution Dental X-ray API"}
+
 # Custom exception handlers
 @app.exception_handler(ModelLoadError)
 async def model_load_error_handler(request: Request, exc: ModelLoadError):
