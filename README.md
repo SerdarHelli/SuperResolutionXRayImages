@@ -1,4 +1,3 @@
-"""
 # Super Resolution DICOM & Image Processing API
 
 This project provides a FastAPI-based application for super-resolving medical DICOM images and standard images (PNG, JPEG). The API integrates preprocessing, inference using a RealESRGAN model, and optional postprocessing steps like CLAHE.
