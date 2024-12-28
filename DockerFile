@@ -44,4 +44,4 @@ COPY ./configs /app/configs
 COPY ./weights /app/weights
 
 # Set the default command for running FastAPI or inference
-CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8080"]
