@@ -97,6 +97,10 @@ postprocessing:
 
 A `Dockerfile` is included for containerized deployment with NVIDIA CUDA support.
 
+### NVIDIA Container Toolkit Before Build
+To enable GPU usage in your Docker container (i.e., by using ```--gpus all```), you need to install the NVIDIA Container Toolkit before building. [Please follow the guide in the provided link for detailed instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). Also, make sure that your drivers are installed and up to date.
+
+
 ### Build the Docker Image
 
 ```bash
