@@ -90,7 +90,8 @@ postprocessing:
 
 3. Run the FastAPI application:
    ```bash
-   uvicorn src.app.main:app --reload
+   uvicorn src.app.main:app --host 0.0.0.0 --port 8080
+
    ```
 
 ## Docker Deployment
@@ -110,10 +111,10 @@ docker build -t super-resolution-api .
 ### Run the Docker Container
 
 ```bash
-docker run --gpus all -p 8000:8000 super-resolution-api
+docker run --gpus all -p 8080:8080 super-resolution-api uvicorn main:app --host 0.0.0.0 --port 8080
 ```
 
-This will launch the API at `http://127.0.0.1:8000`.
+This will launch the API at `http://0.0.0.0:8080`.
 
 
 
@@ -134,7 +135,7 @@ This will launch the API at `http://127.0.0.1:8000`.
 
 Using `curl`:
 ```bash
-curl -X POST "http://127.0.0.1:8000/predict" \
+curl -X POST "http://0.0.0.0:8080/inference/predict" \
   -F "file=@test_image.dcm" \
   -F "apply_clahe_postprocess=true"
 ```
@@ -148,7 +149,7 @@ curl -X POST "http://127.0.0.1:8000/predict" \
 
 Using `curl`:
 ```bash
-curl http://127.0.0.1:8000/health
+curl http://0.0.0.0:8080/health
 ```
 
 #### Example Response:
@@ -177,13 +178,4 @@ Run tests with `pytest`:
   pytest
   ```
 
-- To run a specific test file:
-  ```bash
-  pytest tests/test_inference_pipeline.py
-  ```
-
-- To generate a coverage report:
-  ```bash
-  pytest --cov=src
-  ```
 

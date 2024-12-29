@@ -103,21 +103,17 @@ def apply_clahe(image, clipLimit=2.0, tileGridSize=(8, 8)):
     Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to an image.
 
     Parameters:
-    - image: Input image as a NumPy array or PIL.Image.
+    - image: Input image as a PIL.Image.
     - clipLimit: Threshold for contrast limiting.
     - tileGridSize: Size of the grid for histogram equalization.
 
     Returns:
-    - Processed image in the same format as the input (PIL.Image or NumPy array).
+    - Processed image in the same format as the input (PIL.Image).
     """
-    input_is_pil = isinstance(image, Image.Image)
 
-    if input_is_pil:
-        # Convert PIL image to NumPy array
-        image_np = np.array(image)
-        image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
-    else:
-        image_np = image.copy()
+    image_np = np.array(image)
+    image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
 
     # Apply CLAHE based on image type
     if len(image_np.shape) == 2:
@@ -134,8 +130,6 @@ def apply_clahe(image, clipLimit=2.0, tileGridSize=(8, 8)):
         lab_clahe = cv2.merge((L_clahe, A, B))
         processed = cv2.cvtColor(lab_clahe, cv2.COLOR_LAB2BGR)
 
-    if input_is_pil:
-        processed_rgb = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
-        return Image.fromarray(processed_rgb)
-    else:
-        return processed
+    processed_rgb = cv2.cvtColor(processed, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(processed_rgb)
+

@@ -1,9 +1,10 @@
 import torch
 from PIL import Image
 import numpy as np
+from io import BytesIO
 from pathlib import Path
-from .preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
-from .network.model import RealESRGAN
+from src.preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
+from src.network.model import RealESRGAN
 from src.app.exceptions import InputError, ModelLoadError, PreprocessingError, InferenceError,PostprocessingError
 
 class InferencePipeline:
@@ -73,7 +74,7 @@ class InferencePipeline:
         Postprocess the output from the model.
 
         Args:
-            image_array: Numpy array output from the model.
+            image_array: PIL.Image output from the model.
 
         Returns:
             PIL Image: Postprocessed image.
@@ -92,34 +93,45 @@ class InferencePipeline:
         Check if the input file is a DICOM file.
 
         Args:
-            file_path_or_bytes (str or bytes): Path to the file or byte content of the file.
+            file_path_or_bytes (str or bytes or BytesIO): Path to the file, byte content, or BytesIO object.
 
         Returns:
             bool: True if the file is a DICOM file, False otherwise.
         """
         try:
             if isinstance(file_path_or_bytes, str):
+                # Check the file extension
                 file_extension = Path(file_path_or_bytes).suffix.lower()
                 if file_extension in ['.dcm', '.dicom']:
                     return True
 
+                # Open the file and check the header
                 with open(file_path_or_bytes, 'rb') as file:
                     header = file.read(132)
                     return header[-4:] == b'DICM'
 
-            if isinstance(file_path_or_bytes, bytes):
+            elif isinstance(file_path_or_bytes, BytesIO):
+                file_path_or_bytes.seek(0)
+                header = file_path_or_bytes.read(132)
+                file_path_or_bytes.seek(0)  # Reset the stream position
+                return header[-4:] == b'DICM'
+
+            elif isinstance(file_path_or_bytes, bytes):
                 header = file_path_or_bytes[:132]
                 return header[-4:] == b'DICM'
 
-        except Exception:
+        except Exception as e:
+            print(f"Error during DICOM validation: {e}")
             return False
+
+        return False
         
     def validate_input(self, input_data):
         """
         Validate the input data to ensure it is suitable for processing.
 
         Args:
-            input_data: Path to the input file or bytes content.
+            input_data: Path to the input file, bytes content, or BytesIO object.
 
         Returns:
             bool: True if the input is valid, raises InputError otherwise.
@@ -133,12 +145,14 @@ class InferencePipeline:
             file_extension = Path(input_data).suffix.lower()
             if file_extension not in ['.png', '.jpeg', '.jpg', '.dcm', '.dicom']:
                 raise InputError(f"Unsupported file type '{file_extension}'. Supported types are PNG, JPEG, and DICOM.")
-        elif isinstance(input_data, bytes):
-            # Ensure the byte data is not empty
-            if len(input_data) == 0:
-                raise InputError("Input byte data is empty.")
+        
+        elif isinstance(input_data, BytesIO):
+            # Check if BytesIO data is not empty
+            if input_data.getbuffer().nbytes == 0:
+                raise InputError("Input BytesIO data is empty.")
+
         else:
-            raise InputError("Unsupported input type. Must be a file path or byte content.")
+            raise InputError("Unsupported input type. Must be a file path, byte content, or BytesIO object.")
 
         return True
     
