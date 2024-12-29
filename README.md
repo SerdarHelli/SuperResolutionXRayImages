@@ -139,7 +139,45 @@ curl -X POST "http://0.0.0.0:8080/inference/predict" \
   -F "file=@test_image.dcm" \
   -F "apply_clahe_postprocess=true"
 ```
+***An example request for python :***
+```python 
 
+import requests
+from io import BytesIO
+
+# URL of your FastAPI endpoint
+url = "http://0.0.0.0:8080/inference/predict"
+
+# Path to the DICOM file
+dicom_file_path = "path/to/your/dicom_file.dcm"
+
+# Read the DICOM file into bytes
+with open(dicom_file_path, "rb") as f:
+    dicom_bytes = f.read()
+
+# Create the request payload
+files = {
+    "file": ("dicom_file.dcm", BytesIO(dicom_bytes), "application/dicom"),
+}
+data = {
+    "apply_clahe_postprocess": "false"  # Set to "true" if CLAHE postprocessing is needed
+}
+
+# Send the POST request
+response = requests.post(url, files=files, data=data)
+
+# Check the response
+if response.status_code == 200:
+    print("Prediction successful!")
+    # Save the returned PNG image
+    with open("output.png", "wb") as f:
+        f.write(response.content)
+    print("Output saved to output.png")
+else:
+    print(f"Error: {response.status_code}, {response.text}")
+
+```
+---
 #### `GET /health`
 
 - **Description**: Checks the health of the API and the system.
