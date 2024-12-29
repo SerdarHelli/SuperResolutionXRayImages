@@ -19,6 +19,10 @@ import traceback
 
 router = APIRouter()
 
+import os
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+
 @router.post("/predict")
 async def process_image(
     file: UploadFile = File(...),
@@ -32,15 +36,9 @@ async def process_image(
         apply_clahe_postprocess: Boolean indicating if CLAHE should be applied post-processing.
 
     Returns:
-        StreamingResponse: Processed image or error message.
+        FileResponse: Processed image file or error message.
     """
     try:
-        # Validate the file
-        if not file.content_type in ["image/png", "image/jpeg", "application/dicom"]:
-            raise HTTPException(
-                status_code=415,
-                detail="Unsupported file type. Supported types are PNG, JPEG, and DICOM."
-            )
 
         # Validate apply_clahe_postprocess parameter
         if not isinstance(apply_clahe_postprocess, bool):
@@ -55,23 +53,27 @@ async def process_image(
         # Perform inference with the pipeline
         sr_image = inference_pipeline.run(BytesIO(file_bytes), apply_clahe_postprocess=apply_clahe_postprocess)
 
-        # Save the result to a BytesIO stream
-        output_stream = BytesIO()
-        sr_image.save(output_stream, format="PNG")
-        output_stream.seek(0)
+        # Save the processed image to a temporary file
+        output_file_path = "output_highres.png"
+        sr_image.save(output_file_path, format="PNG")
 
-        # Return the processed image as a streaming response
-        return StreamingResponse(output_stream, media_type="image/png")
+        # Return the file as a response
+        return FileResponse(
+            path=output_file_path,
+            media_type="image/png",
+            filename="processed_image.png"
+        )
 
     except HTTPException as e:
-        return JSONResponse(
-            content={"error": e.detail},
-            status_code=e.status_code
-        )
+        raise e
 
     except Exception as e:
-        traceback.print_exc()
-        return JSONResponse(
-            content={"error": f"Error during prediction: {str(e)}"},
-            status_code=500
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred during processing: {str(e)}"
         )
+    finally:
+        # Cleanup temporary file if it exists
+        if os.path.exists("output_highres.png"):
+            os.remove("output_highres.png")
+

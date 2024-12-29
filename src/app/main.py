@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Request,status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from src.app.routes import inference, health
+from src.app.routes import inference
 from src.app.exceptions import ModelLoadError, PreprocessingError, InferenceError,InputError, PostprocessingError
 import torch
 import os
@@ -12,7 +12,6 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"])
 
 # Include API routes
 app.include_router(inference.router, prefix="/inference", tags=["Inference"])
-app.include_router(health.router, prefix="/health", tags=["Health"])
 
 @app.get("/")
 def read_root():
