@@ -56,7 +56,7 @@ class InferencePipeline:
             if is_dicom:
                 img = read_xray(image_path_or_bytes)
             else:
-                img = Image.open(image_path_or_bytes).convert('RGB')
+                img = Image.open(image_path_or_bytes)
 
             img = enhance_exposure(np.array(img))
             img = unsharp_masking(
@@ -64,7 +64,7 @@ class InferencePipeline:
                 self.config["preprocessing"]["unsharping_mask"].get("kernel_size", 7),
                 self.config["preprocessing"]["unsharping_mask"].get("strength", 0.5)
             )
-            return img
+            return img.convert('RGB')
         except Exception as e:
             raise PreprocessingError(f"Error during postprocessing: {str(e)}")
 
@@ -184,6 +184,6 @@ class InferencePipeline:
         sr_image = self.infer(img)
 
         if apply_clahe_postprocess:
-            sr_image = apply_clahe(sr_image)
+            sr_image = self.postprocess(sr_image)
 
         return sr_image

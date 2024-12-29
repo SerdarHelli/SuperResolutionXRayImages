@@ -1,10 +1,12 @@
-numpy
-opencv-python
-Pillow
+numpy==1.26.4
+opencv-python == 4.10.0.84
+Pillow == 11.0.0
 torch>=1.7
 torchvision>=0.8.0
-tqdm
-pydicom
+tqdm == 4.67.1
+pydicom == 3.0.1
 fastapi 
 uvicorn
+scikit-image
 python-multipart
+huggingface-hub==0.25.2
