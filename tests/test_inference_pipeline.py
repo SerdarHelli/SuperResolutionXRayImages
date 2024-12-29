@@ -1,7 +1,5 @@
 import pytest
 from fastapi.testclient import TestClient
-from src.app.main import app
-from src.app.pipeline import InferencePipeline
 import numpy as np
 from PIL import Image
 from io import BytesIO
@@ -9,6 +7,15 @@ import pydicom
 from pydicom.dataset import Dataset, FileDataset
 import tempfile
 import os
+
+import sys
+from pathlib import Path
+
+# Add the src directory to the Python path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent ))
+
+from src.app.main import app
+from src.pipeline import InferencePipeline
 
 # Initialize test client
 client = TestClient(app)

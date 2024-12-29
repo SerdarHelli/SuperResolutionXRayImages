@@ -1,6 +1,6 @@
 # Use an official Python runtime as a base image
 # syntax=docker/dockerfile:1.4
-FROM nvidia/cuda:12.4.0-devel-ubuntu22.04
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,19 +9,8 @@ ENV TZ=UTC
 # Install system dependencies
 RUN apt-get update && \
     apt-get install -y --fix-missing --no-install-recommends \
-    libgl1-mesa-dev \
-    python3-pip \
-    gcc \
-    libssl-dev \
-    build-essential \
-    libglib2.0-0 \
-    libglx-mesa0 \
-    libgl1 \
     libgl1-mesa-glx \
-    libgl1-mesa-dri \
-    libosmesa6 \
-    libglu1-mesa \
-    libgl1-mesa-dev \
+    python3-pip \
     python3 \
     python3-dev \
     && apt-get clean \

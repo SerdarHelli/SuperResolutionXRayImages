@@ -1,9 +1,9 @@
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi import APIRouter, UploadFile, File,status
 from io import BytesIO
-from ..config import load_config
-from ...pipeline import InferencePipeline
-from ..exceptions import InputError
+from src.app.config import load_config
+from src.pipeline import InferencePipeline
+from src.app.exceptions import InputError
 # Define the router
 router = APIRouter()
 
