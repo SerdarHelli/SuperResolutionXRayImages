@@ -8,7 +8,7 @@ from src.app.config import load_config
 config = load_config()
 inference_pipeline = InferencePipeline(config)
 
-def process_image_from_bytes(file_bytes, apply_clahe_postprocess):
+def process_image_from_bytes(file_input, apply_clahe_postprocess):
     """
     Process the image bytes using the inference pipeline.
 
@@ -21,7 +21,7 @@ def process_image_from_bytes(file_bytes, apply_clahe_postprocess):
     """
     try:
         # Perform super-resolution
-        sr_image = inference_pipeline.run(BytesIO(file_bytes), apply_clahe_postprocess=apply_clahe_postprocess)
+        sr_image = inference_pipeline.run(file_input, apply_clahe_postprocess=apply_clahe_postprocess)
         return sr_image
     except Exception as e:
         return f"An exception occurred: {str(e)}"
@@ -41,19 +41,10 @@ def gradio_interface():
         process_button = gr.Button("Process Image")
         output_image = gr.Image(label="Processed Image")
 
-        def inference(file, apply_clahe):
-            if file is not None:
-                file_bytes = file.read()
-                result = process_image_from_bytes(file_bytes, apply_clahe)
-                if isinstance(result, Image.Image):
-                    return result
-                else:
-                    return None
-            else:
-                return "No file provided."
+
 
         process_button.click(
-            inference,
+            process_image_from_bytes,
             inputs=[file_input, apply_clahe_checkbox],
             outputs=output_image
         )
