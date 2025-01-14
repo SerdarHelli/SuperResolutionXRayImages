@@ -2,7 +2,7 @@ import pydicom
 import numpy as np
 from pydicom.pixels import apply_voi_lut
 from skimage import exposure
-from PIL import Image
+from PIL import Image,ImageEnhance
 import cv2
 
 def read_xray(path, voi_lut=True, fix_monochrome=True):
@@ -33,7 +33,39 @@ def read_xray(path, voi_lut=True, fix_monochrome=True):
     data = data - np.min(data)
 
     return data
+    
+def resize_pil_image(image: Image.Image, target_shape: tuple) -> Image.Image:
+    """
+    Resizes a PIL image based on a target shape.
 
+    Args:
+        image: Input PIL image.
+        target_shape: Desired shape for resizing. It can be a 2D tuple (height, width)
+                       or a 3D tuple (height, width, channels), where channels will be ignored.
+                       
+    Returns:
+        Resized PIL image.
+    """
+    # Convert image to a numpy array
+    np_image = np.array(image)
+
+    # Extract the original height and width from the numpy array
+    height, width = np_image.shape[:2]
+
+    # If the target shape is 2D (height, width)
+    if len(target_shape) == 2:
+        new_width, new_height = target_shape
+    elif len(target_shape) == 3:
+        # If the target shape is 3D (height, width, channels), only change the first two dimensions
+        new_width, new_height = target_shape[:2]
+    else:
+        raise ValueError("Target shape must be either 2D or 3D.")
+
+    # Resize the image using cv2 or PIL's in-built resizing (no channels affected)
+    pil_resized_image = Image.fromarray(np_image).resize((new_width, new_height), Image.LANCZOS)
+
+    return pil_resized_image
+    
 def enhance_exposure(img):
     """
     Enhance image exposure using histogram equalization.
@@ -78,25 +110,39 @@ def unsharp_masking(image, kernel_size=5, strength=0.25):
 
     return Image.fromarray(sharpened)
 
-def increase_contrast(img, factor=1.5):
+def increase_contrast(image: Image.Image, factor: float) -> Image.Image:
     """
-    Increase the contrast of an image.
-
-    Parameters:
-    - img: Input image as a PIL.Image.
-    - factor: Contrast adjustment factor.
-
+    Increases the contrast of the input PIL image by a given factor.
+    
+    Args:
+        image: Input PIL image.
+        factor: Factor by which to increase the contrast. 
+                A factor of 1.0 means no change, values greater than 1.0 increase contrast,
+                values between 0.0 and 1.0 decrease contrast.
+    
     Returns:
-    - PIL.Image: Contrast-enhanced image.
+        Image with increased contrast.
     """
-    img_array = np.array(img).astype(float)
-    mean_intensity = np.mean(img_array)
+    enhancer = ImageEnhance.Contrast(image)
+    image_enhanced = enhancer.enhance(factor)
+    return image_enhanced
 
-    # Adjust contrast
-    img_array = mean_intensity + factor * (img_array - mean_intensity)
-    img_array = np.clip(img_array, 0, 255)
-
-    return Image.fromarray(img_array.astype(np.uint8))
+def increase_brightness(image: Image.Image, factor: float) -> Image.Image:
+    """
+    Increases the brightness of the input PIL image by a given factor.
+    
+    Args:
+        image: Input PIL image.
+        factor: Factor by which to increase the brightness. 
+                A factor of 1.0 means no change, values greater than 1.0 increase brightness,
+                values between 0.0 and 1.0 decrease brightness.
+    
+    Returns:
+        Image with increased brightness.
+    """
+    enhancer = ImageEnhance.Brightness(image)
+    image_enhanced = enhancer.enhance(factor)
+    return image_enhanced
 
 def apply_clahe(image, clipLimit=2.0, tileGridSize=(8, 8)):
     """

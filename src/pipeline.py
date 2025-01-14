@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 from io import BytesIO
 from pathlib import Path
-from src.preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe
+from src.preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe, resize_pil_image, increase_brightness
 from src.network.model import RealESRGAN
 from src.app.exceptions import InputError, ModelLoadError, PreprocessingError, InferenceError,PostprocessingError
 
@@ -42,7 +42,7 @@ class InferencePipeline:
         except Exception as e:
             raise ModelLoadError(f"Error loading weights: {str(e)}")
 
-    def preprocess(self, image_path_or_bytes, is_dicom=False):
+    def preprocess(self, image_path_or_bytes, apply_pre_contrast_adjustment=True, is_dicom=False):
         """
         Preprocess the input image.
 
@@ -58,16 +58,25 @@ class InferencePipeline:
                 img = read_xray(image_path_or_bytes)
             else:
                 img = Image.open(image_path_or_bytes)
+            
+            if apply_pre_contrast_adjustment:
+                img = enhance_exposure(np.array(img))
 
-            img = enhance_exposure(np.array(img))
             img = unsharp_masking(
                 img,
                 self.config["preprocessing"]["unsharping_mask"].get("kernel_size", 7),
-                self.config["preprocessing"]["unsharping_mask"].get("strength", 0.5)
+                self.config["preprocessing"]["unsharping_mask"].get("strength", 2)
             )
-            return img.convert('RGB')
+            img = increase_brightness(
+                        img,
+                        self.config["preprocessing"]["brightness"].get("factor", 1.2),
+                    )
+            if isinstance(img,np.ndarray):
+                img = Image.fromarray(((img / np.max(img))*255).astype(np.uint8))
+
+            return img.convert('RGB'), img.size
         except Exception as e:
-            raise PreprocessingError(f"Error during postprocessing: {str(e)}")
+            raise PreprocessingError(f"Error during preprocessing: {str(e)}")
 
     def postprocess(self, image_array):
         """
@@ -175,7 +184,7 @@ class InferencePipeline:
         except Exception as e:
             raise InferenceError(f"Error during inference: {str(e)}")
         
-    def run(self, input_path,  apply_clahe_postprocess=False):
+    def run(self, input_path,  apply_pre_contrast_adjustment = True, apply_clahe_postprocess=False, return_original_size = True):
         """
         Process a single image and save the output.
 
@@ -189,7 +198,7 @@ class InferencePipeline:
 
         is_dicom =self.is_dicom(input_path)
 
-        img = self.preprocess(input_path, is_dicom=is_dicom)
+        img, original_size = self.preprocess(input_path, is_dicom=is_dicom, apply_pre_contrast_adjustment = apply_pre_contrast_adjustment)
 
         if img is None:
             raise InputError(f"Invalid Input")
@@ -200,4 +209,6 @@ class InferencePipeline:
         if apply_clahe_postprocess:
             sr_image = self.postprocess(sr_image)
 
+        if return_original_size:
+            sr_image = resize_pil_image(sr_image, target_shape = original_size)
         return sr_image

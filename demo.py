@@ -8,7 +8,7 @@ from src.app.config import load_config
 config = load_config()
 inference_pipeline = InferencePipeline(config)
 
-def process_image_from_bytes(file_input, apply_clahe_postprocess):
+def process_image_from_bytes(file, apply_clahe_postprocess,apply_pre_contrast_adjustment,return_original_size):
     """
     Process the image bytes using the inference pipeline.
 
@@ -21,7 +21,7 @@ def process_image_from_bytes(file_input, apply_clahe_postprocess):
     """
     try:
         # Perform super-resolution
-        sr_image = inference_pipeline.run(file_input, apply_clahe_postprocess=apply_clahe_postprocess)
+        sr_image = inference_pipeline.run(file, apply_pre_contrast_adjustment=apply_pre_contrast_adjustment, apply_clahe_postprocess=apply_clahe_postprocess,return_original_size=return_original_size)
         return sr_image
     except Exception as e:
         return f"An exception occurred: {str(e)}"
@@ -37,6 +37,8 @@ def gradio_interface():
         with gr.Row():
             file_input = gr.File(label="Upload Image (PNG, JPEG, or DICOM)")
             apply_clahe_checkbox = gr.Checkbox(label="Apply CLAHE Postprocessing", value=False)
+            apply_preprocess_checkbox = gr.Checkbox(label="Apply PreContrast Adjustment", value=False)
+            return_original_size_checkbox = gr.Checkbox(label="Return Original Size", value=True)
 
         process_button = gr.Button("Process Image")
         output_image = gr.Image(label="Processed Image")
@@ -45,7 +47,7 @@ def gradio_interface():
 
         process_button.click(
             process_image_from_bytes,
-            inputs=[file_input, apply_clahe_checkbox],
+            inputs=[file_input, apply_clahe_checkbox,apply_preprocess_checkbox,return_original_size_checkbox],
             outputs=output_image
         )
 

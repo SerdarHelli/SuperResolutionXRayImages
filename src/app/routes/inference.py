@@ -26,7 +26,10 @@ from fastapi.responses import FileResponse
 @router.post("/predict")
 async def process_image(
     file: UploadFile = File(...),
-    apply_clahe_postprocess: bool = False
+    apply_clahe_postprocess: bool = False,
+    apply_pre_contrast_adjustment: bool = True,
+    return_original_size: bool = True
+
 ):
     """
     API endpoint to process and super-resolve an image.
@@ -46,12 +49,25 @@ async def process_image(
                 status_code=400,
                 detail="The 'apply_clahe_postprocess' parameter must be a boolean."
             )
+        if not isinstance(apply_pre_contrast_adjustment, bool):
+            raise HTTPException(
+                status_code=400,
+                detail="The 'apply_pre_contrast_adjustment' parameter must be a boolean."
+            )
+        if not isinstance(return_original_size, bool):
+                raise HTTPException(
+                    status_code=400,
+                    detail="The 'return_original_size' parameter must be a boolean."
+                )
 
         # Read the uploaded file into memory
         file_bytes = await file.read()
 
         # Perform inference with the pipeline
-        sr_image = inference_pipeline.run(BytesIO(file_bytes), apply_clahe_postprocess=apply_clahe_postprocess)
+        sr_image = inference_pipeline.run(BytesIO(file_bytes), apply_clahe_postprocess=apply_clahe_postprocess, 
+                                          apply_pre_contrast_adjustment = apply_pre_contrast_adjustment,
+                                          return_original_size = return_original_size
+                                          )
 
         # Save the processed image to a temporary file
         output_file_path = "output_highres.png"

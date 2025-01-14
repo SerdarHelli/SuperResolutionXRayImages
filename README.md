@@ -129,6 +129,8 @@ This will launch the API at `http://0.0.0.0:8080`.
 
   - `file`: The image file to process.
   - `apply_clahe_postprocess`: Boolean indicating if CLAHE should be applied after inference.
+  - `apply_preprocess`: Boolean indicating if PREPROCESS should be applied after inference.
+
 - **Response**: Returns the processed image as a PNG.
 
 ### Example Request
@@ -138,6 +140,8 @@ Using `curl`:
 curl -X POST "http://0.0.0.0:8080/inference/predict" \
   -F "file=@test_image.dcm" \
   -F "apply_clahe_postprocess=true"
+  -F "apply_preprocess=true"
+
 ```
 ***An example request for python :***
 ```python 
@@ -160,7 +164,9 @@ files = {
     "file": ("dicom_file.dcm", BytesIO(dicom_bytes), "application/dicom"),
 }
 data = {
-    "apply_clahe_postprocess": "false"  # Set to "true" if CLAHE postprocessing is needed
+    "apply_clahe_postprocess": "false",  # Set to "true" if CLAHE postprocessing is needed
+    "apply_preprocess": "true"  # Set to "true" if preprocess is needed
+
 }
 
 # Send the POST request

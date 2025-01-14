@@ -6,8 +6,10 @@ model:
 preprocessing:
   unsharping_mask:
       kernel_size : 7
-      strength: 0.5
-
+      strength: 2
+  brightness:
+      factor : 1.2
+      
 postprocessing:
   clahe:
     clipLimit: 2
