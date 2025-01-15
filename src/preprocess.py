@@ -123,6 +123,9 @@ def increase_contrast(image: Image.Image, factor: float) -> Image.Image:
     Returns:
         Image with increased contrast.
     """
+    if image.mode not in ['RGB', 'L']:
+        image = image.convert('RGB')
+        
     enhancer = ImageEnhance.Contrast(image)
     image_enhanced = enhancer.enhance(factor)
     return image_enhanced
@@ -140,6 +143,9 @@ def increase_brightness(image: Image.Image, factor: float) -> Image.Image:
     Returns:
         Image with increased brightness.
     """
+    if image.mode not in ['RGB', 'L']:
+        image = image.convert('RGB')
+    
     enhancer = ImageEnhance.Brightness(image)
     image_enhanced = enhancer.enhance(factor)
     return image_enhanced

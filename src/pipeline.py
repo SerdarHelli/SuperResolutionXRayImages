@@ -61,7 +61,13 @@ class InferencePipeline:
             
             if apply_pre_contrast_adjustment:
                 img = enhance_exposure(np.array(img))
-
+                
+            if isinstance(img,np.ndarray):
+                img = Image.fromarray(((img / np.max(img))*255).astype(np.uint8))   
+                
+            if img.mode not in ['RGB']:
+                img = img.convert('RGB')
+                
             img = unsharp_masking(
                 img,
                 self.config["preprocessing"]["unsharping_mask"].get("kernel_size", 7),
@@ -71,10 +77,13 @@ class InferencePipeline:
                         img,
                         self.config["preprocessing"]["brightness"].get("factor", 1.2),
                     )
-            if isinstance(img,np.ndarray):
-                img = Image.fromarray(((img / np.max(img))*255).astype(np.uint8))
 
-            return img.convert('RGB'), img.size
+            
+            if img.mode not in ['RGB']:
+                img = img.convert('RGB')
+                
+        
+            return img, img.size
         except Exception as e:
             raise PreprocessingError(f"Error during preprocessing: {str(e)}")
 
@@ -211,4 +220,5 @@ class InferencePipeline:
 
         if return_original_size:
             sr_image = resize_pil_image(sr_image, target_shape = original_size)
+            
         return sr_image

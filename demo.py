@@ -37,7 +37,7 @@ def gradio_interface():
         with gr.Row():
             file_input = gr.File(label="Upload Image (PNG, JPEG, or DICOM)")
             apply_clahe_checkbox = gr.Checkbox(label="Apply CLAHE Postprocessing", value=False)
-            apply_preprocess_checkbox = gr.Checkbox(label="Apply PreContrast Adjustment", value=False)
+            apply_pre_contrast_adjustment_checkbox = gr.Checkbox(label="Apply PreContrast Adjustment", value=False)
             return_original_size_checkbox = gr.Checkbox(label="Return Original Size", value=True)
 
         process_button = gr.Button("Process Image")
@@ -47,7 +47,7 @@ def gradio_interface():
 
         process_button.click(
             process_image_from_bytes,
-            inputs=[file_input, apply_clahe_checkbox,apply_preprocess_checkbox,return_original_size_checkbox],
+            inputs=[file_input, apply_clahe_checkbox,apply_pre_contrast_adjustment_checkbox,return_original_size_checkbox],
             outputs=output_image
         )
 
