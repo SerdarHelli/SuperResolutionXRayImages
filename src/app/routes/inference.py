@@ -1,9 +1,7 @@
-from fastapi.responses import StreamingResponse, JSONResponse
-from fastapi import APIRouter, UploadFile, File,status
+from fastapi import APIRouter, UploadFile, File
 from io import BytesIO
 from src.app.config import load_config
 from src.pipeline import InferencePipeline
-from src.app.exceptions import InputError
 # Define the router
 router = APIRouter()
 
@@ -12,13 +10,7 @@ config = load_config()
 inference_pipeline = InferencePipeline(config)
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
 from io import BytesIO
-from PIL import Image
-import traceback
-
-router = APIRouter()
-
 import os
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
