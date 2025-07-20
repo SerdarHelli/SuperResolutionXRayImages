@@ -21,7 +21,13 @@ class InferencePipeline:
             config: Configuration dictionary.
         """
         self.config = config
-        self.device = config["model"].get("device", "cuda" if torch.cuda.is_available() else "cpu")
+        preferred_device = config["model"].get("device", "cuda")
+        if preferred_device == "cuda" and not torch.cuda.is_available():
+            print("[Warning] CUDA requested but not available. Falling back to CPU.")
+            self.device = "cpu"
+        else:
+            self.device = preferred_device
+            
         self.scale = config["model"].get("scale", 4)
 
         model_source = config["model"].get("source", "local")
