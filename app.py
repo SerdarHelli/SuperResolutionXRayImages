@@ -30,7 +30,7 @@ def process_image_from_bytes(file, apply_clahe_postprocess,apply_pre_contrast_ad
 def gradio_interface():
     with gr.Blocks() as demo:
         gr.Markdown("""
-        # Image Super-Resolution Demo
+        # X-Ray Image Super-Resolution-Denoiser Demo
         Provide image bytes to process and optionally apply CLAHE postprocessing.
         """)
 
@@ -55,17 +55,7 @@ def gradio_interface():
 
 # Launch the Gradio interface
 demo = gradio_interface()
-demo.queue()
-
-
-demo.queue(max_size=2)
-
 
 demo.launch(
-    share=False,
     debug=True,
-    server_name="0.0.0.0",
-    server_port=7860,
-    ssl_verify=False,
-    auth=[("testoni", "dt1234!")],
 )

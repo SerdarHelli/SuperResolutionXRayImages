@@ -1,4 +1,3 @@
-# Model configuration
 model:
   source: "huggingface"        # Options: "huggingface" or "local"
   repo_id: "SerdarHelli/super_res_xray"   # Required if source is "huggingface"
@@ -7,18 +6,16 @@ model:
   scale: 4
   device: "cuda"  # Options: "cuda", "cpu"
 
-# Preprocessing configuration
 preprocessing:
-  unsharp_mask:
-    kernel_size: 7   # Size of the blur kernel
-    strength: 2      # Sharpening strength
+  unsharping_mask:
+      kernel_size : 7
+      strength: 2
   brightness:
-    factor: 1.2      # Brightness scale factor (1.0 = original)
-
-# Postprocessing configuration
+      factor : 1.2
+      
 postprocessing:
   clahe:
-    clip_limit: 2       # Limit for contrast enhancement
-    tile_grid_size:     # Grid size for CLAHE
+    clipLimit: 2
+    tileGridSize: 
       - 16
       - 16
