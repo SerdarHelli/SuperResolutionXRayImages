@@ -1,18 +1,24 @@
+# Model configuration
 model:
-  weights: "weights/model.pth"  # Path to the model weights
-  scale: 4                      # Scaling factor
-  device: "cuda"                # Device (e.g., "cuda" or "cpu")
+  source: "huggingface"        # Options: "huggingface" or "local"
+  repo_id: "SerdarHelli/super_res_xray"   # Required if source is "huggingface"
+  filename: "net_g.pth" # Model weights filename in HF repo
+  weights: "/path/to/weights.pth"  # Optional if using local weights
+  scale: 4
+  device: "cuda"  # Options: "cuda", "cpu"
 
+# Preprocessing configuration
 preprocessing:
-  unsharping_mask:
-      kernel_size : 7
-      strength: 2
+  unsharp_mask:
+    kernel_size: 7   # Size of the blur kernel
+    strength: 2      # Sharpening strength
   brightness:
-      factor : 1.2
-      
+    factor: 1.2      # Brightness scale factor (1.0 = original)
+
+# Postprocessing configuration
 postprocessing:
   clahe:
-    clipLimit: 2
-    tileGridSize: 
+    clip_limit: 2       # Limit for contrast enhancement
+    tile_grid_size:     # Grid size for CLAHE
       - 16
       - 16

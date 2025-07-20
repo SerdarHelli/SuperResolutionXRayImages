@@ -2,10 +2,15 @@ import torch
 from PIL import Image
 import numpy as np
 from io import BytesIO
+from huggingface_hub import hf_hub_download
 from pathlib import Path
+
 from src.preprocess import read_xray, enhance_exposure, unsharp_masking, apply_clahe, resize_pil_image, increase_brightness
 from src.network.model import RealESRGAN
 from src.app.exceptions import InputError, ModelLoadError, PreprocessingError, InferenceError,PostprocessingError
+
+class ModelLoadError(Exception):
+    pass
 
 class InferencePipeline:
     def __init__(self, config):
@@ -18,16 +23,24 @@ class InferencePipeline:
         self.config = config
         self.device = config["model"].get("device", "cuda" if torch.cuda.is_available() else "cpu")
         self.scale = config["model"].get("scale", 4)
-        self.weights_path = config["model"]["weights"]
-        
+
+        model_source = config["model"].get("source", "local")
+        self.model = RealESRGAN(self.device, scale=self.scale)
+
         print(f"Using device: {self.device}")
-        # Initialize and load the model
+        
         try:
-            self.model = RealESRGAN(self.device, scale=self.scale)
-            self.load_weights(self.weights_path)
+            if model_source == "huggingface":
+                repo_id = config["model"]["repo_id"]
+                filename = config["model"]["filename"]
+                local_path = hf_hub_download(repo_id=repo_id, filename=filename)
+                self.load_weights(local_path)
+            else:
+                local_path = config["model"]["weights"]
+                self.load_weights(local_path)
         except Exception as e:
             raise ModelLoadError(f"Failed to load the model: {str(e)}")
-        
+
     def load_weights(self, model_weights):
         """
         Load the model weights.
@@ -41,7 +54,6 @@ class InferencePipeline:
             raise ModelLoadError(f"Model weights not found at '{model_weights}'.")
         except Exception as e:
             raise ModelLoadError(f"Error loading weights: {str(e)}")
-
     def preprocess(self, image_path_or_bytes, apply_pre_contrast_adjustment=True, is_dicom=False):
         """
         Preprocess the input image.
