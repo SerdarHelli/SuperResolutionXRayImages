@@ -1,4 +1,10 @@
-# Super Resolution DICOM & Image Processing API
+<h1 align="center"> XRay SuperRes Enhancer – FastAPI Service for Super-Resolution and Denoising of Medical X-ray Images<br></h1>
+
+<div align="center">
+  <a href=https://huggingface.co/spaces/SerdarHelli/super-res-xray  target="_blank"><img src=https://img.shields.io/static/v1?label=Online%20Demo&message=HuggingFace&color=yellow></a>
+  <a href=https://huggingface.co/SerdarHelli/super_res_xray target="_blank"><img src=https://img.shields.io/static/v1?label=Model&message=HuggingFace&color=yellow></a>
+
+</div>
 
 This project supports all types of 2D medical X-ray images, including chest, dental, and others. It performs super-resolution and denoising using a RealESRGAN-based model. The application supports both standard image formats (e.g., PNG, JPEG) and medical DICOM files. Originally developed for a specific customer request, the project was left unused. After some time, I decided to open source it so others can benefit from its functionality.
 
