@@ -66,19 +66,24 @@ The application uses a YAML configuration file (`configs/config.yaml`) for setti
 
 ```yaml
 model:
-  weights: "weights/model.pth"
+  source: "huggingface"        # Options: "huggingface" or "local"
+  repo_id: "SerdarHelli/super_res_xray"   # Required if source is "huggingface"
+  filename: "net_g.pth" # Model weights filename in HF repo
+  weights: "/path/to/weights.pth"  # Optional if using local weights
   scale: 4
-  device: "cuda"
+  device: "cuda"  # Options: "cuda", "cpu"
 
 preprocessing:
   unsharping_mask:
-    kernel_size: 7
-    strength: 0.5
-
+      kernel_size : 7
+      strength: 2
+  brightness:
+      factor : 1.2
+      
 postprocessing:
   clahe:
     clipLimit: 2
-    tileGridSize:
+    tileGridSize: 
       - 16
       - 16
 ```
